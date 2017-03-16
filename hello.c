@@ -1,3 +1,4 @@
+extern int js_func();
 int hello(int i) {
-  return i + 1;
+  return i + js_func();
 }

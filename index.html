@@ -6,9 +6,67 @@
     <title></title>
   </head>
   <body>
-    Experiment with compiling c to minimal webassembly file.
-    <script>
-// TODO Load wasm
-    </script>
+    <b>Example of compiling C to minimal WebAssembly without standard library.</b>
+
+    <p>First we write a small C program:</p>
+
+    <p><b>hello.c</b>
+    <pre>
+extern int js_func();
+
+int hello(int i) {
+  return i + js_func();
+}
+    </pre>
+
+    <p>that we compile it with:
+<pre>emcc -O2 -s EXPORTED_FUNCTIONS="['_hello']" -s WASM=1 -s ONLY_MY_CODE=1 -g2  hello.c -o hello.js</pre>
+and get:
+
+    <p><b>hello.wasm</b> (193 bytes, disassembled with <code>wasm-dis</code>)
+    <pre>
+(module
+  (type $0 (func (result i32)))
+  (type $1 (func (param i32) (result i32)))
+  (import "env" "_js_func" (func $import$0 (result i32)))
+  (import "env" "memory" (memory $0 256 256))
+  (import "env" "table" (table 0 0 anyfunc))
+  (import "env" "memoryBase" (global $import$3 i32))
+  (import "env" "tableBase" (global $import$4 i32))
+  (export "_hello" (func $_hello))
+  (func $_hello (type $1) (param $var$0 i32) (result i32)
+    (i32.add
+      (call $import$0)
+      (get_local $var$0)
+    )
+  )
+)
+    </pre>
+
+    <p>which can then be loaded with JavaScript:
+    <h3>index.js</h3>
+    <pre>
+(async()=>{
+
+  let env = {
+    memory: new WebAssembly.Memory({initial: 256, maximum: 256}),
+    table: new WebAssembly.Table({element: 'anyfunc', initial: 0, maximum: 0}),
+    memoryBase: 0,
+    tableBase: 0,
+    _js_func: () => 40,
+  }
+
+  let code = await fetch('hello.wasm');
+  code = await code.arrayBuffer();
+  code = await WebAssembly.instantiate(code, {env});
+
+  document.body.innerHTML += code.instance.exports._hello(2)
+
+})();
+    </pre>
+
+    <p>If the browser supports WebAssembly, this gives a result:</p>
+
+    <script src=index.js></script>
   </body>
 </html>
