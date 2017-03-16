@@ -20,7 +20,7 @@ int hello(int i) {
 }
     </pre>
 
-    <p>that we compile it with:
+    <p>Then we compile it with:
 <pre>emcc -O2 -s EXPORTED_FUNCTIONS="['_hello']" -s WASM=1 -s ONLY_MY_CODE=1 -g2  hello.c -o hello.js</pre>
 and get:
 
